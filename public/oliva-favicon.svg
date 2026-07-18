@@ -1,0 +1,11 @@
+<svg width="32" height="32" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="98" fill="white" />
+  <ellipse cx="100" cy="82" rx="38" ry="52" stroke="#4a6741" strokeWidth="9" fill="none" />
+  <path d="M78 108 Q78 124 100 124 Q122 124 122 108 L118 96 L82 96 Z" fill="#4a6741" />
+  <ellipse cx="100" cy="124" rx="24" ry="4" fill="#4a6741" />
+  <path d="M122 101 Q134 101 134 110 Q134 119 122 119" stroke="#4a6741" strokeWidth="5" fill="none" strokeLinecap="round" />
+  <ellipse cx="100" cy="96" rx="18" ry="4" fill="#4a6741" />
+  <path d="M92 93 Q84 80 92 68 Q100 56 88 44" stroke="#4a6741" strokeWidth="4" fill="none" strokeLinecap="round" />
+  <path d="M103 90 Q96 76 105 62 Q112 52 100 38" stroke="#4a6741" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+  <text x="100" y="156" textAnchor="middle" fontFamily="Georgia, serif" fontSize="22" fontWeight="400" letterSpacing="8" fill="#4a6741">OLIVA</text>
+</svg>
