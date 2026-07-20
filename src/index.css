@@ -123,3 +123,120 @@ body { font-family:system-ui,-apple-system,sans-serif; background-color:#f5f5f4;
     opacity: 0;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Night Olive Luxury — homepage-only styles
+   Palette: #4D6437 #556B2F #3F4638 #2F2C28 #4A3426 #CCA478 #DCCFB6 #FAF9F6
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Hero image slow zoom + living-camera drift (transform only) */
+@keyframes noh-hero-zoom {
+  0%   { transform: scale(1.02) translate(0, 0); }
+  50%  { transform: scale(1.045) translate(1px, -1px); }
+  100% { transform: scale(1.06) translate(-1px, 1px); }
+}
+.noh-hero-img {
+  animation: noh-hero-zoom 11s ease-in-out forwards;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .noh-hero-img { animation: none; transform: scale(1.03); }
+}
+
+/* Subtle steam line */
+@keyframes noh-steam {
+  0%   { transform: translateY(0) scaleY(1); opacity: 0; }
+  30%  { opacity: 0.18; }
+  100% { transform: translateY(-120px) scaleY(1.6); opacity: 0; }
+}
+.noh-steam {
+  animation: noh-steam 7s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) { .noh-steam { animation: none; opacity: 0; } }
+
+/* Hanging sign entrance + single swing */
+@keyframes noh-sign-swing {
+  0%   { transform: rotate(0deg); }
+  20%  { transform: rotate(2deg); }
+  45%  { transform: rotate(-1deg); }
+  70%  { transform: rotate(0.4deg); }
+  100% { transform: rotate(0deg); }
+}
+.noh-sign-swing { animation: noh-sign-swing 2.4s ease-in-out 0.6s 1 forwards; }
+@media (prefers-reduced-motion: reduce) { .noh-sign-swing { animation: none; } }
+
+/* Sign internal light turning on */
+@keyframes noh-sign-light {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+.noh-sign-light { animation: noh-sign-light 1.2s ease-in 1.4s forwards; opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .noh-sign-light { animation: none; opacity: 1; } }
+
+/* Entrance fades for hero UI elements */
+@keyframes noh-fade-up {
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.noh-fade-up { animation: noh-fade-up 0.9s ease-out forwards; opacity: 0; }
+.noh-fade    { animation: noh-fade-up 0.9s ease-out forwards; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .noh-fade-up, .noh-fade { animation: none; opacity: 1; transform: none; }
+}
+
+/* Scroll-for-more arrow */
+@keyframes noh-arrow-down {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(4px); }
+}
+.noh-arrow { animation: noh-arrow-down 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .noh-arrow { animation: none; } }
+
+/* Cinematic grain overlay */
+.noh-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Olive-shaped hamburger button */
+.noh-burger {
+  border-radius: 999px / 60px; /* olive/oval shape */
+  background: rgba(47, 44, 40, 0.55);
+  border: 1px solid rgba(220, 207, 182, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.noh-burger:hover {
+  transform: translateY(-2px);
+  border-color: rgba(220, 207, 182, 0.75);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+.noh-burger-line {
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+  transform-origin: center;
+}
+
+/* Premium button base */
+.noh-btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.noh-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.12), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.noh-btn:hover::before { opacity: 1; }
+.noh-btn:active { transform: translateY(1px) scale(0.99); }
+
+/* Prevent horizontal overflow from any hero element */
+.noh-overflow-guard { overflow-x: clip; }

@@ -41,10 +41,51 @@ export default function Navbar({ navigate, route }: { navigate: (to: Route) => v
             </button>
           ))}
         </div>
-        <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            {menuOpen ? <path d="M6 6l12 12M6 18L18 6" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
-          </svg>
+        <button
+          className="md:hidden noh-burger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+          style={{
+            display: 'inline-flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '5px',
+            width: '52px',
+            height: '38px',
+            padding: '0',
+          }}
+        >
+          <span
+            className="noh-burger-line"
+            style={{
+              width: '22px',
+              height: '2px',
+              background: '#FAF9F6',
+              borderRadius: '2px',
+              transform: menuOpen ? 'translateY(7px) rotate(45deg)' : 'none',
+            }}
+          />
+          <span
+            className="noh-burger-line"
+            style={{
+              width: '22px',
+              height: '2px',
+              background: '#FAF9F6',
+              borderRadius: '2px',
+              opacity: menuOpen ? 0 : 1,
+            }}
+          />
+          <span
+            className="noh-burger-line"
+            style={{
+              width: '22px',
+              height: '2px',
+              background: '#FAF9F6',
+              borderRadius: '2px',
+              transform: menuOpen ? 'translateY(-7px) rotate(-45deg)' : 'none',
+            }}
+          />
         </button>
       </div>
       {menuOpen && (
