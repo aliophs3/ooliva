@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Background from './components/Background';
 import Navbar from './components/Navbar';
 import NightOliveHero from './components/NightOliveHero';
-import ScrollVideoSection from './components/ScrollVideoSection';
 import Menu from './components/Menu';
 import Footer from './components/Footer';
 import IntroAnimation from './components/IntroAnimation';
@@ -182,7 +181,6 @@ export default function App() {
         <Navbar navigate={navigateMenu} route={'home'} />
         <main className="relative z-10">
           <NightOliveHero onViewMenu={navigateMenu} onBook={scrollToBooking} introDone={!showIntro} />
-          <ScrollVideoSection onViewMenu={navigateMenu} />
           <CatchABreak onBook={scrollToBooking} />
           <EditorialGallery />
           <ViewMenuCTA onViewMenu={navigateMenu} />
