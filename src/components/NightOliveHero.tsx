@@ -5,9 +5,10 @@ const WHATSAPP_PHONE = '961XXXXXXXX'
 const WHATSAPP_MESSAGE = 'Hello, I would like to ask about booking a padel court.'
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
-const VIDEO_SRC = '/6e7154.mp4'
+const VIDEO_SRC_DESKTOP = '/oliva-hero-720.mp4'
+const VIDEO_SRC_MOBILE = '/oliva-hero-480.mp4'
 const VIDEO_POSTER = '/1000013222.jpg'
-const VIDEO_DURATION = 3 // seconds — only this slice is used
+const VIDEO_DURATION = 6 // seconds — slow-motion slice
 
 // Approved homepage palette
 const C = {
@@ -53,14 +54,21 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
 
     let raf = 0
     let targetTime = 0
+    let lastTime = 0
 
-    const tick = () => {
-      // Smooth interpolation toward target time
+    const tick = (now: number) => {
+      // Throttle to ~30fps max for seeking to reduce overhead
+      if (now - lastTime < 33) {
+        raf = requestAnimationFrame(tick)
+        return
+      }
+      lastTime = now
       if (video.duration) {
         const cur = video.currentTime
         const diff = targetTime - cur
-        if (Math.abs(diff) > 0.02) {
-          const next = cur + diff * 0.18
+        // Gentle smoothing — catches up smoothly without lag or judder
+        if (Math.abs(diff) > 0.015) {
+          const next = cur + diff * 0.12
           try { video.currentTime = next } catch { /* not seekable yet */ }
         }
       }
@@ -81,7 +89,6 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
     window.addEventListener('resize', onScroll)
     onScroll()
     raf = requestAnimationFrame(tick)
-
     return () => {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
@@ -149,7 +156,6 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
             opacity: introDone && videoReady ? 1 : 0,
             transition: 'opacity 1s ease',
           }}
-          src={VIDEO_SRC}
           poster={VIDEO_POSTER}
           muted
           playsInline
@@ -157,7 +163,10 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
           onLoadedData={onLoadedData}
           onCanPlay={onLoadedData}
           // No autoPlay, no loop — scroll drives currentTime
-        />
+        >
+          <source src={VIDEO_SRC_DESKTOP} type="video/mp4" media="(min-width: 768px)" />
+          <source src={VIDEO_SRC_MOBILE} type="video/mp4" />
+        </video>
         {/* Overlay: soft gradient from espresso → transparent → frame, keeps buttons clear */}
         <div
           className="absolute inset-0"

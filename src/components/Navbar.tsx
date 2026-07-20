@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 type Route = 'home' | 'menu';
 
-const SIGN_IMAGE = '/Screenshot_20260720_033202_Drive.jpg';
+const LOGO_IMAGE = '/oliva-logo.png';
 
 export default function Navbar({ navigate, route }: { navigate: (to: Route) => void; route: Route }) {
   const [scrolled, setScrolled] = useState(false);
@@ -37,33 +37,20 @@ export default function Navbar({ navigate, route }: { navigate: (to: Route) => v
       }}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between" style={{ height: '64px' }}>
-        {/* Oliva sign image — real storefront sign, carefully cropped */}
+        {/* Oliva logo — background-removed, original branding preserved */}
         <button
           onClick={() => go('home')}
           className="flex items-center transition-opacity hover:opacity-90"
-          style={{ height: '52px', maxWidth: 'min(300px, 38vw)' }}
+          style={{ height: '48px' }}
           aria-label="Oliva — From Court to Cup"
         >
-          <div
-            className="relative h-full w-full overflow-hidden flex items-center"
-            style={{ borderRadius: '10px' }}
-          >
-            <img
-              src={SIGN_IMAGE}
-              alt="Oliva sign"
-              className="h-full w-full object-cover"
-              style={{ objectPosition: 'center center' }}
-              draggable={false}
-            />
-            {/* Subtle dark overlay for readability */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: 'linear-gradient(90deg, rgba(47,44,40,0.35) 0%, rgba(47,44,40,0.15) 50%, rgba(47,44,40,0.35) 100%)',
-                pointerEvents: 'none',
-              }}
-            />
-          </div>
+          <img
+            src={LOGO_IMAGE}
+            alt="Oliva — From Court to Cup"
+            className="h-full w-auto object-contain"
+            style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' }}
+            draggable={false}
+          />
         </button>
 
         {/* Desktop links */}
