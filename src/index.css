@@ -240,3 +240,18 @@ body { font-family:system-ui,-apple-system,sans-serif; background-color:#f5f5f4;
 
 /* Prevent horizontal overflow from any hero element */
 .noh-overflow-guard { overflow-x: clip; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile performance — disable heavy effects below 768px
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .noh-hero-img { animation: none !important; transform: scale(1.02); will-change: auto; }
+  .noh-steam { animation: none !important; opacity: 0.05 !important; will-change: auto; }
+  .noh-grain { opacity: 0.018 !important; }
+  .noh-status-pill { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .noh-btn { box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important; }
+  .noh-arrow { animation-duration: 3s !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .noh-hero-img, .noh-steam, .noh-grain, .noh-arrow { animation: none !important; will-change: auto; }
+}

@@ -6,9 +6,15 @@ const WHATSAPP_MESSAGE = 'Hello, I would like to ask about booking a padel court
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
 const VIDEO_SRC_DESKTOP = '/oliva-hero-720.mp4'
-const VIDEO_SRC_MOBILE = '/oliva-hero-480.mp4'
+const VIDEO_SRC_MOBILE = '/oliva-hero-mobile.mp4'
 const VIDEO_POSTER = '/1000013222.jpg'
-const VIDEO_DURATION = 6 // seconds — slow-motion slice
+const VIDEO_DURATION_DESKTOP = 6 // seconds — slow-motion slice
+const VIDEO_DURATION_MOBILE = 3 // seconds — mobile clip
+
+// Image-sequence fallback for mobile
+const FRAMES_COUNT = 48
+const FRAMES_DIR = '/hero-frames'
+const frameURL = (i: number) => `${FRAMES_DIR}/frame_${String(i + 1).padStart(3, '0')}.webp`
 
 // Approved homepage palette
 const C = {
@@ -30,59 +36,93 @@ interface Props {
   introDone: boolean
 }
 
+type RenderMode = 'desktop-video' | 'mobile-canvas' | 'lowpower-poster'
+
 export default function NightOliveHero({ onViewMenu, introDone }: Props) {
   const heroRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [videoReady, setVideoReady] = useState(false)
   const [reduced, setReduced] = useState(false)
+  const [mode, setMode] = useState<RenderMode>('desktop-video')
   const [waHover, setWaHover] = useState(false)
 
+  // ── Device detection ──────────────────────────────────────────────────────
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setReduced(mq.matches)
-    const update = () => setReduced(mq.matches)
-    mq.addEventListener('change', update)
-    return () => mq.removeEventListener('change', update)
+    const mqReduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const mqMobile = window.matchMedia('(max-width: 767px)')
+    const conn = (navigator as any).connection
+    const saveData = conn?.saveData || false
+    const mem = (navigator as any).deviceMemory || 4
+
+    const evaluate = () => {
+      setReduced(mqReduced.matches)
+      const lowPower = mqReduced.matches || saveData || mem < 4
+      if (lowPower) setMode('lowpower-poster')
+      else if (mqMobile.matches) setMode('mobile-canvas')
+      else setMode('desktop-video')
+    }
+    evaluate()
+
+    const onReduced = () => evaluate()
+    const onMobile = () => evaluate()
+    mqReduced.addEventListener('change', onReduced)
+    mqMobile.addEventListener('change', onMobile)
+    return () => {
+      mqReduced.removeEventListener('change', onReduced)
+      mqMobile.removeEventListener('change', onMobile)
+    }
   }, [])
 
-  // Scroll-controlled video: map hero scroll progress 0→1 to video time 0→3s
+  // ── Desktop: scroll-controlled MP4 video ───────────────────────────────────
   useEffect(() => {
-    if (reduced) return
+    if (mode !== 'desktop-video' || reduced) return
     const video = videoRef.current
     const hero = heroRef.current
     if (!video || !hero) return
 
     let raf = 0
     let targetTime = 0
-    let lastTime = 0
+    let lastSeek = 0
+    let inView = true
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        inView = entries[0].isIntersecting
+        if (inView) {
+          video.style.willChange = 'transform'
+        } else {
+          video.style.willChange = 'auto'
+        }
+      },
+      { threshold: 0.01 },
+    )
+    io.observe(hero)
 
     const tick = (now: number) => {
-      // Throttle to ~30fps max for seeking to reduce overhead
-      if (now - lastTime < 33) {
-        raf = requestAnimationFrame(tick)
-        return
-      }
-      lastTime = now
+      raf = requestAnimationFrame(tick)
+      if (!inView) return
+      // Limit seeking to ~30fps
+      if (now - lastSeek < 33) return
+      lastSeek = now
       if (video.duration) {
         const cur = video.currentTime
         const diff = targetTime - cur
-        // Gentle smoothing — catches up smoothly without lag or judder
-        if (Math.abs(diff) > 0.015) {
+        // Only seek when difference is meaningful
+        if (Math.abs(diff) > 0.03) {
           const next = cur + diff * 0.12
           try { video.currentTime = next } catch { /* not seekable yet */ }
         }
       }
-      raf = requestAnimationFrame(tick)
     }
 
     const onScroll = () => {
       const rect = hero.getBoundingClientRect()
       const viewportH = window.innerHeight
-      // Progress: 0 when hero top is at viewport top, 1 when hero bottom is at viewport bottom
       const scrolled = -rect.top
       const total = rect.height - viewportH
       const progress = Math.min(Math.max(scrolled / total, 0), 1)
-      targetTime = progress * VIDEO_DURATION
+      targetTime = progress * VIDEO_DURATION_DESKTOP
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -93,10 +133,144 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
       cancelAnimationFrame(raf)
+      io.disconnect()
+      if (video) video.style.willChange = 'auto'
     }
-  }, [reduced])
+  }, [mode, reduced])
 
-  // Preload video during intro; reveal when first frame is ready
+  // ── Mobile: canvas image-sequence ──────────────────────────────────────────
+  const framesRef = useRef<HTMLImageElement[]>([])
+  const [firstFramesReady, setFirstFramesReady] = useState(false)
+
+  useEffect(() => {
+    if (mode !== 'mobile-canvas') return
+
+    // Preload first 6 frames immediately (during intro)
+    const PRELOAD_FIRST = 6
+    let loaded = 0
+    const firstBatch: HTMLImageElement[] = []
+    for (let i = 0; i < PRELOAD_FIRST; i++) {
+      const img = new Image()
+      img.onload = () => {
+        loaded++
+        if (loaded >= PRELOAD_FIRST) setFirstFramesReady(true)
+      }
+      img.src = frameURL(i)
+      firstBatch[i] = img
+    }
+    framesRef.current = firstBatch
+
+    // Load remaining frames in background
+    for (let i = PRELOAD_FIRST; i < FRAMES_COUNT; i++) {
+      const img = new Image()
+      img.src = frameURL(i)
+      framesRef.current[i] = img
+    }
+
+    return () => { framesRef.current = [] }
+  }, [mode])
+
+  useEffect(() => {
+    if (mode !== 'mobile-canvas') return
+    const canvas = canvasRef.current
+    const hero = heroRef.current
+    if (!canvas || !hero) return
+    const ctx = canvas.getContext('2d', { alpha: false })
+    if (!ctx) return
+
+    let raf = 0
+    let targetFrame = 0
+    let currentFrame = 0
+    let lastDraw = 0
+    let inView = true
+
+    // Set canvas resolution to match display size (capped for perf)
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const w = Math.min(canvas.clientWidth * dpr, 1080)
+      const h = Math.min(canvas.clientHeight * dpr, 720)
+      canvas.width = w
+      canvas.height = h
+    }
+    resize()
+    window.addEventListener('resize', resize)
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        inView = entries[0].isIntersecting
+        canvas.style.willChange = inView ? 'transform' : 'auto'
+      },
+      { threshold: 0.01 },
+    )
+    io.observe(hero)
+
+    // Draw image with object-cover semantics
+    const drawCover = (img: HTMLImageElement) => {
+      const cw = canvas.width
+      const ch = canvas.height
+      const iw = img.naturalWidth
+      const ih = img.naturalHeight
+      if (!iw || !ih) return
+      const imgRatio = iw / ih
+      const canvasRatio = cw / ch
+      let sx = 0, sy = 0, sw = iw, sh = ih
+      if (imgRatio > canvasRatio) {
+        sh = ih
+        sw = sh * canvasRatio
+        sx = (iw - sw) / 2
+      } else {
+        sw = iw
+        sh = sw / canvasRatio
+        sy = (ih - sh) / 2
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch)
+    }
+
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick)
+      if (!inView) return
+      // Limit to ~30fps on mobile
+      if (now - lastDraw < 33) return
+      lastDraw = now
+
+      // Smooth current frame toward target
+      const diff = targetFrame - currentFrame
+      if (Math.abs(diff) > 0.1) {
+        currentFrame += diff * 0.15
+      }
+
+      const frameIdx = Math.round(currentFrame)
+      if (frameIdx >= 0 && frameIdx < FRAMES_COUNT) {
+        const img = framesRef.current[frameIdx]
+        if (img && img.complete && img.naturalWidth > 0) {
+          drawCover(img)
+        }
+      }
+    }
+
+    const onScroll = () => {
+      const rect = hero.getBoundingClientRect()
+      const viewportH = window.innerHeight
+      const scrolled = -rect.top
+      const total = rect.height - viewportH
+      const progress = Math.min(Math.max(scrolled / total, 0), 1)
+      targetFrame = progress * (FRAMES_COUNT - 1)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    raf = requestAnimationFrame(tick)
+
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', resize)
+      cancelAnimationFrame(raf)
+      io.disconnect()
+      canvas.style.willChange = 'auto'
+    }
+  }, [mode, firstFramesReady])
+
+  // Preload desktop video during intro
   const onLoadedData = () => setVideoReady(true)
 
   // Magnetic hover (desktop only, max 3px)
@@ -126,8 +300,11 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
     }
   }
 
-  // Entrance delays (start after intro)
   const d = (n: number) => (introDone ? `${n}ms` : '9999ms')
+
+  const showVideo = mode === 'desktop-video' && !reduced
+  const showCanvas = mode === 'mobile-canvas'
+  const showPosterOnly = mode === 'lowpower-poster' || reduced
 
   return (
     <section
@@ -136,38 +313,66 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
       className="relative w-full overflow-hidden noh-overflow-guard"
       style={{ height: '100vh', minHeight: '600px', background: C.espresso }}
     >
-      {/* ── Video background (3-second scroll-controlled) ──────────────────── */}
+      {/* ── Background layer: video / canvas / poster ────────────────────── */}
       <div className="absolute inset-0 z-0">
-        {/* Poster shown until video first frame is ready */}
-        {!videoReady && (
-          <img
-            src={VIDEO_POSTER}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: 'center center' }}
-            draggable={false}
+        {/* Poster: always present as base — never a black frame */}
+        <img
+          src={VIDEO_POSTER}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: 'center center' }}
+          draggable={false}
+        />
+
+        {/* Desktop: MP4 video */}
+        {showVideo && (
+          <video
+            ref={videoRef}
+            className="noh-hero-img absolute inset-0 w-full h-full object-cover"
+            style={{
+              objectPosition: 'center center',
+              opacity: introDone && videoReady ? 1 : 0,
+              transition: 'opacity 1s ease',
+            }}
+            poster={VIDEO_POSTER}
+            muted
+            playsInline
+            preload="auto"
+            onLoadedData={onLoadedData}
+            onCanPlay={onLoadedData}
+          >
+            <source src={VIDEO_SRC_DESKTOP} type="video/mp4" />
+          </video>
+        )}
+
+        {/* Mobile: canvas image-sequence (guaranteed smooth) */}
+        {showCanvas && (
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              opacity: introDone && firstFramesReady ? 1 : 0,
+              transition: 'opacity 0.8s ease',
+              objectFit: 'cover',
+            }}
           />
         )}
-        <video
-          ref={videoRef}
-          className="noh-hero-img absolute inset-0 w-full h-full object-cover"
-          style={{
-            objectPosition: 'center center',
-            opacity: introDone && videoReady ? 1 : 0,
-            transition: 'opacity 1s ease',
-          }}
-          poster={VIDEO_POSTER}
-          muted
-          playsInline
-          preload="auto"
-          onLoadedData={onLoadedData}
-          onCanPlay={onLoadedData}
-          // No autoPlay, no loop — scroll drives currentTime
-        >
-          <source src={VIDEO_SRC_DESKTOP} type="video/mp4" media="(min-width: 768px)" />
-          <source src={VIDEO_SRC_MOBILE} type="video/mp4" />
-        </video>
-        {/* Overlay: soft gradient from espresso → transparent → frame, keeps buttons clear */}
+
+        {/* Low-power: subtle CSS zoom on poster only */}
+        {showPosterOnly && (
+          <div
+            className="noh-hero-img absolute inset-0 w-full h-full"
+            style={{
+              backgroundImage: `url(${VIDEO_POSTER})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center center',
+              opacity: introDone ? 1 : 0,
+              transition: 'opacity 1s ease',
+            }}
+          />
+        )}
+
+        {/* Overlay: soft gradient from espresso → transparent → frame */}
         <div
           className="absolute inset-0"
           style={{
@@ -175,7 +380,7 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
               'linear-gradient(180deg, rgba(47,44,40,0.7) 0%, rgba(47,44,40,0.25) 30%, rgba(63,70,56,0.3) 60%, rgba(47,44,40,0.85) 100%)',
           }}
         />
-        {/* Subtle court lines (3-4% opacity) */}
+        {/* Subtle court lines (3-4% opacity, static on mobile) */}
         <svg
           className="absolute inset-0 w-full h-full"
           preserveAspectRatio="none"
@@ -186,7 +391,7 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
           <line x1="50" y1="10" x2="50" y2="90" stroke={C.cream} strokeWidth="0.2" />
           <line x1="20" y1="50" x2="80" y2="50" stroke={C.cream} strokeWidth="0.2" />
         </svg>
-        {/* One soft steam line */}
+        {/* One soft steam line (static on mobile via CSS) */}
         <div
           className="noh-steam absolute"
           style={{
@@ -199,7 +404,7 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
             borderRadius: '2px',
           }}
         />
-        {/* Cinematic grain (2%) */}
+        {/* Cinematic grain (static on mobile) */}
         <div className="noh-grain absolute inset-0" />
         {/* Soft edge vignette */}
         <div
@@ -232,7 +437,7 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
 
         {/* Opening status pill */}
         <div
-          className="noh-fade-up inline-flex items-center gap-2.5 mb-10"
+          className="noh-fade-up noh-status-pill inline-flex items-center gap-2.5 mb-10"
           style={{
             background: 'rgba(47,44,40,0.6)',
             border: `1px solid ${C.cream}55`,
