@@ -294,3 +294,22 @@ body { font-family:system-ui,-apple-system,sans-serif; background-color:#f5f5f4;
   }
 }
 
+/* Gallery logo — appears at center-top after transition completes */
+.noh-gallery-logo {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(140px, 18vw, 180px);
+  height: clamp(140px, 18vw, 180px);
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(220, 207, 182, 0.35);
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.noh-gallery-logo.visible {
+  opacity: 1;
+}
