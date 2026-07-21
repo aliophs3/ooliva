@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import IntroAnimation from './components/IntroAnimation';
 import CatchABreak from './components/CatchABreak';
 import EditorialGallery from './components/EditorialGallery';
+import HeroToGalleryTransition from './components/HeroToGalleryTransition';
 import ViewMenuCTA from './components/ViewMenuCTA';
 import ContactSection from './components/ContactSection';
 import SiteFooter from './components/SiteFooter';
@@ -180,9 +181,11 @@ export default function App() {
         <Background />
         <Navbar navigate={navigateMenu} route={'home'} />
         <main className="relative z-10">
-          <NightOliveHero onViewMenu={navigateMenu} onBook={scrollToBooking} introDone={!showIntro} />
+          <HeroToGalleryTransition
+            hero={<NightOliveHero onViewMenu={navigateMenu} onBook={scrollToBooking} introDone={!showIntro} />}
+            gallery={<EditorialGallery />}
+          />
           <CatchABreak onBook={scrollToBooking} />
-          <EditorialGallery />
           <ViewMenuCTA onViewMenu={navigateMenu} />
           <ContactSection />
         </main>

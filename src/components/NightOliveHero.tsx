@@ -80,6 +80,8 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
     const video = videoRef.current
     const hero = heroRef.current
     if (!video || !hero) return
+    // Skip scroll-seeking when inside the circular reveal transition
+    if (hero.closest('.noh-transition')) return
 
     let raf = 0
     let targetTime = 0
@@ -175,6 +177,8 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
     const canvas = canvasRef.current
     const hero = heroRef.current
     if (!canvas || !hero) return
+    // Skip scroll-seeking when inside the circular reveal transition
+    if (hero.closest('.noh-transition')) return
     const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
@@ -291,12 +295,19 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
   }
 
   const scrollToNext = () => {
-    const hero = heroRef.current
-    if (hero) {
-      const next = hero.nextElementSibling
-      next?.scrollIntoView({ behavior: 'smooth' })
+    // Scroll to where the gallery fills the screen (~60% through the 160svh transition)
+    const transition = document.querySelector('.noh-transition') as HTMLElement | null
+    if (transition) {
+      const target = transition.offsetTop + transition.offsetHeight * 0.6
+      window.scrollTo({ top: target, behavior: 'smooth' })
     } else {
-      document.getElementById('catch-a-break')?.scrollIntoView({ behavior: 'smooth' })
+      const hero = heroRef.current
+      if (hero) {
+        const next = hero.nextElementSibling
+        next?.scrollIntoView({ behavior: 'smooth' })
+      } else {
+        document.getElementById('catch-a-break')?.scrollIntoView({ behavior: 'smooth' })
+      }
     }
   }
 
@@ -417,7 +428,7 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
       </div>
 
       {/* ── Content: label, status pill, three buttons ─────────────────────── */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 sm:px-6 pt-20 pb-24">
+      <div className="noh-hero-content relative z-10 h-full flex flex-col items-center justify-center px-4 sm:px-6 pt-20 pb-24">
         {/* Premium label */}
         <p
           className="noh-fade-up text-center"

@@ -255,3 +255,58 @@ body { font-family:system-ui,-apple-system,sans-serif; background-color:#f5f5f4;
 @media (prefers-reduced-motion: reduce) {
   .noh-hero-img, .noh-steam, .noh-grain, .noh-arrow { animation: none !important; will-change: auto; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Circular reveal transition — Hero → Gallery
+   ═══════════════════════════════════════════════════════════════════════════ */
+.noh-transition {
+  --p: 0;
+  --logo-size: clamp(100px, 13vw, 130px);
+}
+
+/* Gallery layer: hidden until circle reveals it */
+.noh-gallery-reveal {
+  will-change: clip-path, -webkit-clip-path;
+  /* Subtle ring border that fades as circle grows */
+  position: relative;
+}
+.noh-gallery-reveal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--border-opacity, 1);
+  box-shadow: 0 0 0 3px rgba(220, 207, 182, 0.4), 0 0 40px rgba(0, 0, 0, 0.3);
+  clip-path: inherit;
+  -webkit-clip-path: inherit;
+  transition: opacity 0.1s linear;
+}
+
+/* Small circular logo window — top-left, below navbar */
+.noh-logo-circle {
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(220, 207, 182, 0.3);
+  will-change: opacity;
+  pointer-events: none;
+}
+
+/* Hero content fade — driven by --p variable on .noh-transition */
+.noh-transition .noh-fade-up {
+  /* opacity controlled by JS via parent layer, not here */
+}
+
+/* Ensure gallery inside transition doesn't add its own scroll/padding issues */
+.noh-transition .noh-gallery-reveal > section {
+  padding-top: 64px; /* clear the fixed navbar */
+}
+
+/* Mobile: reduce logo circle size */
+@media (max-width: 767px) {
+  .noh-transition {
+    --logo-size: 100px;
+  }
+  .noh-logo-circle {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(220, 207, 182, 0.2);
+  }
+}
