@@ -7,11 +7,12 @@ interface Props {
 /**
  * Circular reveal transition from Hero → Gallery.
  *
- * The circle clip-path is centered on the logo at all times, so the logo
- * appears to "draw" the light-green gallery background into view. The logo
- * travels from top-left (hero) to center-top (gallery). When the scroll
- * ends, the logo sits at center-top and the real gallery section follows
- * below as a normal scrollable section.
+ * A logo-filled circle starts large in the hero center, travels to the
+ * navbar logo position (top-left) as the user scrolls, shrinking and
+ * landing slightly bigger than the navbar logo. The circle clip-path
+ * reveals the light-green gallery behind. When the scroll completes,
+ * the circle fades out and the navbar logo takes over — no logo remains
+ * frozen on screen.
  */
 export default function HeroToGalleryTransition({ hero }: Props) {
   const sectionRef = useRef<HTMLElement>(null)
@@ -40,15 +41,19 @@ export default function HeroToGalleryTransition({ hero }: Props) {
 
       section.style.setProperty('--p', progress.toFixed(4))
 
-      // ── Logo position: top-left → center-top ──
-      const startSize = vw < 768 ? 100 : 130
-      const endSize = vw < 768 ? 140 : 180
+      // ── Logo circle: hero center → navbar logo position (top-left) ──
+      // Navbar logo is ~48px tall at left ~24px, top ~8px (inside 64px navbar)
+  // We land at ~58px — slightly bigger than navbar logo
+      const startSize = vw < 768 ? 160 : 200
+      const endSize = vw < 768 ? 52 : 58
       const logoSize = startSize + (endSize - startSize) * easeInOut(progress)
 
-      const startX = vw < 768 ? 30 : 50
-      const startY = 100
-      const endX = (vw - logoSize) / 2
-      const endY = 70
+      // Start: center of hero
+      const startX = (vw - startSize) / 2
+      const startY = (vh - startSize) / 2
+      // End: navbar logo position (left padding ~24px, vertically centered in 64px navbar)
+      const endX = vw < 768 ? 12 : 24
+      const endY = (64 - endSize) / 2
 
       const logoX = startX + (endX - startX) * easeInOut(progress)
       const logoY = startY + (endY - startY) * easeInOut(progress)
@@ -86,8 +91,12 @@ export default function HeroToGalleryTransition({ hero }: Props) {
       const heroBgOpacity = progress < 0.65 ? 1 : Math.max(0, 1 - (progress - 0.65) / 0.35)
       heroLayer.style.opacity = heroBgOpacity.toFixed(3)
 
-      // Circle border fade: fade out from 75% to 98%
-      const borderOpacity = progress < 0.75 ? 1 : Math.max(0, 1 - (progress - 0.75) / 0.23)
+      // Logo circle fade: fade out from 88% to 100% (navbar logo takes over)
+      const circleOpacity = progress < 0.88 ? 1 : Math.max(0, 1 - (progress - 0.88) / 0.12)
+      logoCircle.style.opacity = circleOpacity.toFixed(3)
+
+      // Circle border/shadow fade
+      const borderOpacity = progress < 0.75 ? 1 : Math.max(0, 1 - (progress - 0.75) / 0.25)
       galleryLayer.style.setProperty('--border-opacity', borderOpacity.toFixed(3))
     }
 
@@ -136,15 +145,15 @@ export default function HeroToGalleryTransition({ hero }: Props) {
           {hero}
         </div>
 
-        {/* ── Logo circle — travels from top-left to center-top ── */}
+        {/* ── Logo circle — travels from hero center to navbar logo position ── */}
         <div
           ref={logoCircleRef}
           className="absolute z-40 noh-logo-circle"
           style={{
-            top: '100px',
-            left: '50px',
-            width: '130px',
-            height: '130px',
+            top: '50%',
+            left: '50%',
+            width: '200px',
+            height: '200px',
             opacity: 1,
           }}
         >
