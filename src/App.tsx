@@ -104,6 +104,31 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // Show/hide the gallery logo based on scroll position
+  useEffect(() => {
+    const onScroll = () => {
+      const transition = document.querySelector('.noh-transition') as HTMLElement | null;
+      const galleryLogo = document.querySelector('.noh-gallery-logo') as HTMLElement | null;
+      if (!transition || !galleryLogo) return;
+      const rect = transition.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const scrolled = -rect.top;
+      const progress = total > 0 ? Math.min(Math.max(scrolled / total, 0), 1) : 0;
+      // Show when transition is ~90% complete, hide when gallery section is scrolled past
+      const gallery = document.getElementById('gallery');
+      const galleryRect = gallery?.getBoundingClientRect();
+      const galleryVisible = galleryRect ? galleryRect.bottom > 100 : false;
+      if (progress > 0.9 && galleryVisible) {
+        galleryLogo.classList.add('visible');
+      } else {
+        galleryLogo.classList.remove('visible');
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const navigateHome = () => { window.location.hash = '/'; };
   const navigateMenu = () => { window.location.hash = '/menu'; };
   const navigateList = (cat: Category) => { window.location.hash = CATEGORY_DATA[cat].listHash; };
@@ -183,8 +208,12 @@ export default function App() {
         <main className="relative z-10">
           <HeroToGalleryTransition
             hero={<NightOliveHero onViewMenu={navigateMenu} onBook={scrollToBooking} introDone={!showIntro} />}
-            gallery={<EditorialGallery />}
           />
+          {/* Logo stays visible at center-top after transition */}
+          <div className="noh-gallery-logo" aria-hidden>
+            <img src="/oliva-logo.jpg" alt="" className="w-full h-full object-cover" draggable={false} />
+          </div>
+          <EditorialGallery />
           <CatchABreak onBook={scrollToBooking} />
           <ViewMenuCTA onViewMenu={navigateMenu} />
           <ContactSection />

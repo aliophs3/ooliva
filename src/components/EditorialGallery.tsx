@@ -123,23 +123,10 @@ function GalleryItem({ item, index }: { item: typeof GALLERY_IMAGES[number]; ind
 
 export default function EditorialGallery() {
   return (
-    <section id="gallery" className="py-20 sm:py-32 bg-white overflow-hidden">
+    <section id="gallery" className="py-20 sm:py-32 overflow-hidden" style={{ background: '#E8EFE0' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <motion.div
-          className="text-center mb-12 sm:mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-        >
-          <p className="text-sm font-semibold text-olive-600 tracking-[0.3em] uppercase mb-3">
-            Our Spaces
-          </p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-stone-800">
-            Experience Oliva
-          </h2>
-          <div className="w-16 h-1 bg-olive-600 rounded-full mx-auto mt-4" />
-        </motion.div>
+        {/* Spacer for logo circle that sits at center-top after transition */}
+        <div className="h-32 sm:h-40" aria-hidden />
 
         {/* Editorial grid — first block (café + food items, ends with burger) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[180px] sm:auto-rows-[220px] lg:auto-rows-[260px] gap-4">
@@ -148,25 +135,8 @@ export default function EditorialGallery() {
           ))}
         </div>
 
-        {/* Padel section heading */}
-        <motion.div
-          className="text-center mt-16 sm:mt-20 mb-12 sm:mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-        >
-          <p className="text-sm font-semibold text-olive-600 tracking-[0.3em] uppercase mb-3">
-            On the Court
-          </p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-stone-800">
-            Padel
-          </h2>
-          <div className="w-16 h-1 bg-olive-600 rounded-full mx-auto mt-4" />
-        </motion.div>
-
         {/* Editorial grid — second block (padel courts + atmosphere) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[180px] sm:auto-rows-[220px] lg:auto-rows-[260px] gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[180px] sm:auto-rows-[220px] lg:auto-rows-[260px] gap-4 mt-8">
           {GALLERY_IMAGES.slice(5).map((item, i) => (
             <GalleryItem key={i + 5} item={item} index={i + 5} />
           ))}

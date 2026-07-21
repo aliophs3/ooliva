@@ -2,26 +2,18 @@ import { useEffect, useRef, type ReactNode } from 'react'
 
 interface Props {
   hero: ReactNode
-  gallery: ReactNode
 }
 
 /**
  * Circular reveal transition from Hero → Gallery.
  *
- * Structure:
- *   <section> height ~160svh
- *     <div sticky 100svh>
- *       Gallery layer (real gallery, always rendered, revealed through circle mask)
- *       Hero layer (green bg + video + buttons + text + logo circle)
- *
- * Scroll progress 0→1 drives via CSS variable --p:
- *   - circle clip-path radius: small → fullscreen
- *   - hero content (buttons/text) opacity: 1 → 0 (fades in first 35%)
- *   - logo circle photo opacity: 1 → 0 (fades in first 25%)
- *   - hero green bg opacity: 1 → 0 (fades from 60% to 100%)
- *   - circle border/shadow opacity: 1 → 0 (fades from 70% to 95%)
+ * The circle clip-path is centered on the logo at all times, so the logo
+ * appears to "draw" the light-green gallery background into view. The logo
+ * travels from top-left (hero) to center-top (gallery). When the scroll
+ * ends, the logo sits at center-top and the real gallery section follows
+ * below as a normal scrollable section.
  */
-export default function HeroToGalleryTransition({ hero, gallery }: Props) {
+export default function HeroToGalleryTransition({ hero }: Props) {
   const sectionRef = useRef<HTMLElement>(null)
   const galleryLayerRef = useRef<HTMLDivElement>(null)
   const heroLayerRef = useRef<HTMLDivElement>(null)
@@ -40,48 +32,62 @@ export default function HeroToGalleryTransition({ hero, gallery }: Props) {
     const update = () => {
       raf = requestAnimationFrame(update)
       const rect = section.getBoundingClientRect()
-      const viewportH = window.innerHeight
+      const vw = window.innerWidth
+      const vh = window.innerHeight
       const scrolled = -rect.top
-      const total = rect.height - viewportH
+      const total = rect.height - vh
       const progress = Math.min(Math.max(scrolled / total, 0), 1)
 
       section.style.setProperty('--p', progress.toFixed(4))
 
-      // Circle radius: starts small, grows to cover full screen
-      const vw = window.innerWidth
-      const vh = window.innerHeight
-      const diag = Math.sqrt(vw * vw + vh * vh)
-      const baseR = vw < 768 ? 50 : 65
-      const fullR = diag * 0.6
-      const r = baseR + (fullR - baseR) * easeInOut(progress)
+      // ── Logo position: top-left → center-top ──
+      const startSize = vw < 768 ? 100 : 130
+      const endSize = vw < 768 ? 140 : 180
+      const logoSize = startSize + (endSize - startSize) * easeInOut(progress)
 
-      // Circle center: top-left, just below navbar
-      const cx = vw < 768 ? 50 : 65
-      const cy = 64 + (vw < 768 ? 50 : 65)
+      const startX = vw < 768 ? 30 : 50
+      const startY = 100
+      const endX = (vw - logoSize) / 2
+      const endY = 70
+
+      const logoX = startX + (endX - startX) * easeInOut(progress)
+      const logoY = startY + (endY - startY) * easeInOut(progress)
+
+      logoCircle.style.width = `${logoSize}px`
+      logoCircle.style.height = `${logoSize}px`
+      logoCircle.style.left = `${logoX}px`
+      logoCircle.style.top = `${logoY}px`
+
+      // Circle center = center of logo
+      const cx = logoX + logoSize / 2
+      const cy = logoY + logoSize / 2
+
+      // Circle radius: starts at ~60% of logo size, grows to cover screen
+      const diag = Math.sqrt(vw * vw + vh * vh)
+      const baseR = logoSize * 0.62
+      const fullR = diag * 0.62
+      const r = baseR + (fullR - baseR) * easeInOut(progress)
 
       const clip = `circle(${r}px at ${cx}px ${cy}px)`
       galleryLayer.style.clipPath = clip
       galleryLayer.style.setProperty('-webkit-clip-path', clip)
 
-      // Hero content (buttons/text): fade out in first 35%
-      const heroOpacity = Math.max(0, 1 - progress / 0.35)
-      const heroY = progress * 30
+      // Hero content fade: fade out in first 30%
+      if (!heroContent) {
+        heroContent = heroLayer.querySelector('.noh-hero-content') as HTMLDivElement | null
+      }
       const hc = heroContent
       if (hc) {
-        hc.style.opacity = heroOpacity.toFixed(3)
-        hc.style.transform = `translateY(${heroY.toFixed(1)}px)`
+        hc.style.opacity = Math.max(0, 1 - progress / 0.3).toFixed(3)
+        hc.style.transform = `translateY(${(progress * 25).toFixed(1)}px)`
       }
 
-      // Logo circle photo: fade out in first 25%
-      const logoOpacity = Math.max(0, 1 - progress / 0.25)
-      logoCircle.style.opacity = logoOpacity.toFixed(3)
-
-      // Hero green bg: fade out from 60% to 100%
-      const heroBgOpacity = progress < 0.6 ? 1 : Math.max(0, 1 - (progress - 0.6) / 0.4)
+      // Hero layer fade: fade out from 65% to 100%
+      const heroBgOpacity = progress < 0.65 ? 1 : Math.max(0, 1 - (progress - 0.65) / 0.35)
       heroLayer.style.opacity = heroBgOpacity.toFixed(3)
 
-      // Circle border/shadow: fade out from 70% to 95%
-      const borderOpacity = progress < 0.7 ? 1 : Math.max(0, 1 - (progress - 0.7) / 0.25)
+      // Circle border fade: fade out from 75% to 98%
+      const borderOpacity = progress < 0.75 ? 1 : Math.max(0, 1 - (progress - 0.75) / 0.23)
       galleryLayer.style.setProperty('--border-opacity', borderOpacity.toFixed(3))
     }
 
@@ -104,27 +110,24 @@ export default function HeroToGalleryTransition({ hero, gallery }: Props) {
         height: '160svh',
         // @ts-expect-error CSS custom property
         '--p': '0',
-        '--logo-size': 'clamp(100px, 13vw, 130px)',
       }}
     >
-      {/* Sticky viewport — holds both layers */}
       <div
         className="sticky top-0 w-full overflow-hidden"
         style={{ height: '100svh' }}
       >
-        {/* ── Gallery layer (real gallery, revealed through circle mask) ── */}
+        {/* ── Gallery preview layer (light green bg, revealed through circle) ── */}
         <div
           ref={galleryLayerRef}
           className="absolute inset-0 z-10 noh-gallery-reveal"
           style={{
+            background: '#E8EFE0',
             // @ts-expect-error CSS custom property
             '--border-opacity': '1',
           }}
-        >
-          {gallery}
-        </div>
+        />
 
-        {/* ── Hero layer (green bg + video) ──────────────────────────────── */}
+        {/* ── Hero layer (dark green bg + video) ── */}
         <div
           ref={heroLayerRef}
           className="absolute inset-0 z-20"
@@ -133,26 +136,22 @@ export default function HeroToGalleryTransition({ hero, gallery }: Props) {
           {hero}
         </div>
 
-        {/* ── Small circular logo window (top-left, below navbar) ─────────── */}
+        {/* ── Logo circle — travels from top-left to center-top ── */}
         <div
           ref={logoCircleRef}
           className="absolute z-40 noh-logo-circle"
           style={{
-            top: '64px',
-            left: '0px',
-            width: 'var(--logo-size)',
-            height: 'var(--logo-size)',
+            top: '100px',
+            left: '50px',
+            width: '130px',
+            height: '130px',
             opacity: 1,
           }}
         >
           <img
-            src="/oliva-logo.png"
-            alt="Oliva sign"
+            src="/oliva-logo.jpg"
+            alt="Oliva logo"
             className="w-full h-full object-cover"
-            style={{
-              objectPosition: 'center 30%',
-              transform: 'scale(1.6)',
-            }}
             draggable={false}
           />
         </div>

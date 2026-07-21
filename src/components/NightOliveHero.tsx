@@ -295,19 +295,12 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
   }
 
   const scrollToNext = () => {
-    // Scroll to where the gallery fills the screen (~60% through the 160svh transition)
     const transition = document.querySelector('.noh-transition') as HTMLElement | null
     if (transition) {
-      const target = transition.offsetTop + transition.offsetHeight * 0.6
+      const target = transition.offsetTop + transition.offsetHeight - window.innerHeight
       window.scrollTo({ top: target, behavior: 'smooth' })
     } else {
-      const hero = heroRef.current
-      if (hero) {
-        const next = hero.nextElementSibling
-        next?.scrollIntoView({ behavior: 'smooth' })
-      } else {
-        document.getElementById('catch-a-break')?.scrollIntoView({ behavior: 'smooth' })
-      }
+      document.getElementById('catch-a-break')?.scrollIntoView({ behavior: 'smooth' })
     }
   }
 
@@ -322,7 +315,7 @@ export default function NightOliveHero({ onViewMenu, introDone }: Props) {
       id="home"
       ref={heroRef}
       className="relative w-full overflow-hidden noh-overflow-guard"
-      style={{ height: '100vh', minHeight: '600px', background: C.espresso }}
+      style={{ height: '100vh', minHeight: '600px', background: C.oliveDark }}
     >
       {/* ── Background layer: video / canvas / poster ────────────────────── */}
       <div className="absolute inset-0 z-0">
